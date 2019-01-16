@@ -1,0 +1,1 @@
+# Bitcoin clon class
