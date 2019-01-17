@@ -23,7 +23,8 @@ let blockchain = [genesisBlock];
 const getLastBlock = () => blockchain[blockchain.length - 1];
 const getTimestamp = () => Date().getTime() / 1000;
 const createHash = (index, previousHash, timestamp, data) =>
-  CryptoJS.SHA256(index + previousHash + timestamp + data).toString;
+  CryptoJS.SHA256(index + previousHash + timestamp + JSON.stringify(data))
+    .toString;
 
 const CreateNewBlock = (data) => {
   const previousBlock = getLastBlock();
@@ -48,7 +49,10 @@ const getBlockHash = (block) =>
   createHash(block.index, block.previousHash, block.timestamp, block.data);
 
 const isNewBlockValid = (candidateBlock, latestBlock) => {
-  if (latestBlock.index + 1 !== candidateBlock.index) {
+  if (!isNewStructureValid) {
+    console.log("The candidate block structure is not valid");
+    return false;
+  } else if (latestBlock.index + 1 !== candidateBlock.index) {
     console.log("The candidate block doesnt have a valid index");
     return false;
   } else if (latestBlock.hash !== candidateBlock.previousHash) {
@@ -59,6 +63,34 @@ const isNewBlockValid = (candidateBlock, latestBlock) => {
   } else if (candidateBlock.hash !== getBlockHash(candidateBlock)) {
     console.log("The hash of this block is invalid");
     return false;
+  }
+  return true;
+};
+
+const isNewStructureValid = (block) => {
+  return (
+    typeof block.index === "number" &&
+    typeof block.hash === "string" &&
+    typeof block.previousHash === "string" &&
+    typeof block.timestamp === "number" &&
+    typeof block.data === "string"
+  );
+};
+
+const isChainValid = (candidateChain) => {
+  const isGenesisBlock = (block) => {
+    return JSON.stringify(block) === JSON.stringify(genesisBlock);
+  };
+  if (!isGenesisBlock(candidateChain[0])) {
+    console.log(
+      "The candidateChains's genesisBlock is not the same as our genesisBlock"
+    );
+    return false;
+  }
+  for (let i = 1; i < candidateChain.length; i++) {
+    if (!isNewBlockValid(candidateChain[i], candidateChain[i - 1])) {
+      return false;
+    }
   }
   return true;
 };
