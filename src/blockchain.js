@@ -1,4 +1,5 @@
-const CryptoJS = require("crypto-js");
+const CryptoJS = require("crypto-js"),
+  hexToBinary = require("hex-to-binary");
 
 class Block {
   constructor(index, hash, previousHash, timestamp, data, difficulty, nonce) {
@@ -32,25 +33,20 @@ const getBlockchain = () => blockchain;
 
 const createHash = (index, previousHash, timestamp, data, difficulty, nonce) =>
   CryptoJS.SHA256(
-    index + previousHash + timestamp + JSON.stringify(data)
+    index + previousHash + timestamp + JSON.stringify(data) + difficulty + nonce
   ).toString();
 
 const createNewBlock = (data) => {
   const previousBlock = getNewestBlock();
   const newBlockIndex = previousBlock.index + 1;
   const newTimestamp = getTimestamp();
-  const newHash = createHash(
+
+  const newBlock = findBlock(
     newBlockIndex,
     previousBlock.hash,
     newTimestamp,
-    data
-  );
-  const newBlock = new Block(
-    newBlockIndex,
-    newHash,
-    previousBlock.hash,
-    newTimestamp,
-    data
+    data,
+    10
   );
   addBlockToChain(newBlock);
   require("./p2p").broadcastNewBlock();
@@ -60,6 +56,7 @@ const createNewBlock = (data) => {
 const findBlock = (index, previousHash, timestamp, data, difficulty) => {
   let nonce = 0;
   while (true) {
+    console.log("Current nonce", nonce);
     const hash = createHash(
       index,
       previousHash,
@@ -68,13 +65,27 @@ const findBlock = (index, previousHash, timestamp, data, difficulty) => {
       difficulty,
       nonce
     );
-    if (1) {
-      //
-    } else {
-      nonce++;
+    if (hashMatchesDifficulty(hash, difficulty)) {
+      return new Block(
+        index,
+        hash,
+        previousHash,
+        timestamp,
+        data,
+        difficulty,
+        nonce
+      );
     }
+    nonce++;
   }
 };
+
+const hashMatchesDifficulty = (hash, difficulty) => {
+  const hashInBinary = hexToBinary(hash);
+  const requiredZeros = "0".repeat(difficulty);
+  console.log("Trying difficulty:", difficulty, "with hash", hashInBinary);
+  return hashInBinary.startsWith(requiredZeros);
+}; //해쉬를 2진수로 변환하여 00000으로 시작하는지 확인
 
 const getBlocksHash = (block) =>
   createHash(block.index, block.previousHash, block.timestamp, block.data);
