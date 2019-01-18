@@ -102,7 +102,9 @@ const handleBlockchainResponse = (receivedBlocks) => {
   const newestBlock = getNewestBlock();
   if (latestBlockReceived.index > newestBlock.index) {
     if (newestBlock.hash === latestBlockReceived.previousHash) {
-      addBlockToChain(latestBlockReceived);
+      if (addBlockToChain(latestBlockReceived)) {
+        broadcastNewBlock();
+      }
     } else if (receivedBlocks.length === 1) {
       sendMessageToAll(getAll());
     } else {
@@ -129,6 +131,8 @@ const handleSocketError = (ws) => {
   ws.on("error", () => closeSocketConnection(ws));
 };
 
+const broadcastNewBlock = () => sendMessageToAll(responseLatest());
+
 const connectToPeers = (newPeer) => {
   const ws = new WebSockets(newPeer);
   ws.on("open", () => {
@@ -138,5 +142,6 @@ const connectToPeers = (newPeer) => {
 
 module.exports = {
   startP2PServer,
-  connectToPeers
+  connectToPeers,
+  broadcastNewBlock
 };
