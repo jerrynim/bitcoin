@@ -20,7 +20,7 @@ const genesisBlock = new Block(
 
 let blockchain = [genesisBlock];
 
-const getLastBlock = () => blockchain[blockchain.length - 1];
+const getNewestBlock = () => blockchain[blockchain.length - 1];
 
 const getTimestamp = () => new Date().getTime() / 1000;
 
@@ -32,7 +32,7 @@ const createHash = (index, previousHash, timestamp, data) =>
   ).toString();
 
 const createNewBlock = (data) => {
-  const previousBlock = getLastBlock();
+  const previousBlock = getNewestBlock();
   const newBlockIndex = previousBlock.index + 1;
   const newTimestamp = getTimestamp();
   const newHash = createHash(
@@ -55,8 +55,8 @@ const createNewBlock = (data) => {
 const getBlocksHash = (block) =>
   createHash(block.index, block.previousHash, block.timestamp, block.data);
 
-const isNewBlockValid = (candidateBlock, latestBlock) => {
-  if (!isNewStructureValid(candidateBlock)) {
+const isBlockValid = (candidateBlock, latestBlock) => {
+  if (!isBlockStructureValid(candidateBlock)) {
     console.log("The candidate block structure is not valid");
     return false;
   } else if (latestBlock.index + 1 !== candidateBlock.index) {
@@ -72,9 +72,9 @@ const isNewBlockValid = (candidateBlock, latestBlock) => {
     return false;
   }
   return true;
-};
+}; // 브록의 타입검증, 인덱스값 검증, 이전 해쉬값 검증, 계산된 해쉬값 검증
 
-const isNewStructureValid = (block) => {
+const isBlockStructureValid = (block) => {
   return (
     typeof block.index === "number" &&
     typeof block.hash === "string" &&
@@ -82,25 +82,25 @@ const isNewStructureValid = (block) => {
     typeof block.timestamp === "number" &&
     typeof block.data === "string"
   );
-};
+}; //블록의 타입 검증
 
 const isChainValid = (candidateChain) => {
-  const isGenesisBlock = (block) => {
+  const isGenesisValid = (block) => {
     return JSON.stringify(block) === JSON.stringify(genesisBlock);
   };
-  if (!isGenesisBlock(candidateChain[0])) {
+  if (!isGenesisValid(candidateChain[0])) {
     console.log(
       "The candidateChains's genesisBlock is not the same as our genesisBlock"
     );
     return false;
   }
   for (let i = 1; i < candidateChain.length; i++) {
-    if (!isNewBlockValid(candidateChain[i], candidateChain[i - 1])) {
+    if (!isBlockValid(candidateChain[i], candidateChain[i - 1])) {
       return false;
     }
   }
   return true;
-};
+}; //제네시스 블락을 비교 && 다음블락부터 검증
 
 const replaceChain = (candidateChain) => {
   if (
@@ -112,18 +112,22 @@ const replaceChain = (candidateChain) => {
   } else {
     return false;
   }
-};
+}; //길이를 비교하여 길이가 긴것으로 대치한다
 
 const addBlockToChain = (candidateBlock) => {
-  if (isNewBlockValid(candidateBlock, getLastBlock())) {
+  if (isBlockValid(candidateBlock, getNewestBlock())) {
     blockchain.push(candidateBlock);
     return true;
   } else {
     return false;
   }
-};
+}; //후보블락을 블록체인에 푸쉬 한다.
 
 module.exports = {
+  getNewestBlock,
   getBlockchain,
-  createNewBlock
+  createNewBlock,
+  isBlockStructureValid,
+  addBlockToChain,
+  replaceChain
 };
