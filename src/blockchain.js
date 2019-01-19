@@ -184,10 +184,17 @@ const isChainValid = (candidateChain) => {
   return true;
 }; //제네시스 블락을 비교 && 다음블락부터 검증
 
+const sumDifficulty = (anyBlockchain) => {
+  anyBlockchain
+    .map((block) => block.difficulty)
+    .map((difficulty) => Math.pow(2, difficulty))
+    .reduce((a, b) => a + b);
+};
+
 const replaceChain = (candidateChain) => {
   if (
     isChainValid(candidateChain) &&
-    candidateChain.length > getBlockchain().length
+    sumDifficulty(candidateChain) > sumDifficulty(getBlockchain())
   ) {
     blockchain = candidateChain;
     return true;
