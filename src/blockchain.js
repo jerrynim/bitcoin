@@ -20,7 +20,7 @@ const genesisBlock = new Block(
   0,
   "2C4CEB90344F20CC4C77D626247AED3ED530C1AEE3E6E85AD494498B17414CAC",
   null,
-  1520312194926,
+  1520312194,
   "This is the genesis!!",
   10,
   0
@@ -30,7 +30,7 @@ let blockchain = [genesisBlock];
 
 const getNewestBlock = () => blockchain[blockchain.length - 1];
 
-const getTimestamp = () => new Date().getTime() / 1000;
+const getTimestamp = () => Math.round(new Date().getTime() / 1000);
 
 const getBlockchain = () => blockchain;
 
@@ -142,9 +142,19 @@ const isBlockValid = (candidateBlock, latestBlock) => {
   } else if (getBlocksHash(candidateBlock) !== candidateBlock.hash) {
     console.log("The hash of this block is invalid");
     return false;
+  } else if (isTimeStampVlid(candidateBlock, latestBlock)) {
+    return false;
+    console.log("The timestamp of this block is dodgy");
   }
   return true;
 }; // 브록의 타입검증, 인덱스값 검증, 이전 해쉬값 검증, 계산된 해쉬값 검증
+
+const isTimeStampVlid = (newBlock, oldBlock) => {
+  return (
+    oldBlock.timestamp - 60 < newBlock.timestamp &&
+    newBlock.timestamp - 60 < getTimestamp()
+  );
+};
 
 const isBlockStructureValid = (block) => {
   return (
