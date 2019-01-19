@@ -1,4 +1,9 @@
-const CrpytoJS = require("crypto-js");
+const CrpytoJS = require("crypto-js"),
+  elliptic = require("elliptic"),
+  utils = require("./utils");
+
+const ec = new elliptic.ec("secp256k1");
+//initialize elliptic
 
 class TxOut {
   constructor(address, amount) {
@@ -20,9 +25,9 @@ class Transaction {
 }
 
 class UTxOut {
-  constructor(uTxOutId, uTxOutIndex, address, amount) {
-    this.uTxOutId = uTxOutId;
-    this.uTxOutIndex = uTxOutIndex;
+  constructor(txOutId, txOutIndex, address, amount) {
+    this.txOutId = txOutId;
+    this.txOutIndex = txOutIndex;
     tihs.address = address;
     this.amount = amount;
   }
@@ -40,4 +45,24 @@ const getTxId = (tx) => {
     .reduce((a, b) => a + b, "");
 
   return CrpytoJS.SHA256(txInContent + txOutContent).toString();
+};
+
+const signTxIn = (tx, txInIndex, privatekey, uTxOut) => {
+  const txIn = tx.txIns[txInIndex];
+  const dataToSign = tx.id;
+
+  const findUTxOut = (txOutId, txOutIndex, txOutList) => {
+    return txOutList.find(
+      (uTxOut) =>
+        uTxOut.txOutId === txOutId && uTxOut.uTxOutIndex === txOutIndex
+    );
+  };
+
+  const referencedUTxOut = findUTxOut(txIn.txOutId, tx.txOutIndex, uTxOut);
+  if (referencedUTxOut === null) {
+    return;
+  }
+  const key = ec.keyFromPrivate(privatekey, "hex");
+  const signature = utils.toHexString(key.sign(dataToSign).toDER());
+  return signature;
 };
