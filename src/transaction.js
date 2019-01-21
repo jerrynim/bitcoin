@@ -164,3 +164,17 @@ const isTxStructureValid = (tx) => {
     return true;
   }
 };
+
+const validateTx = (tx, uTxOutList) => {
+  if (getTxId() !== tx.id) {
+    return false;
+  }
+};
+
+const hashValidTxIns = () => {};
+const amountInTxIns = () => {};
+const amountInTxOuts = () => {};
+
+if (amountInTxIns !== amountInTxOuts) {
+  return false;
+} //트랜잭션인풋과 아웃풋이 같지않다면 false
