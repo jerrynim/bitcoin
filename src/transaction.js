@@ -66,3 +66,26 @@ const signTxIn = (tx, txInIndex, privatekey, uTxOut) => {
   const signature = utils.toHexString(key.sign(dataToSign).toDER());
   return signature;
 };
+
+const updateUTxOuts = (newTxs, uTxOutList) => {
+  const newUTxOuts = mewTxs
+    .map((tx) => {
+      tx.txOuts.map((txOut, index) => {
+        new UTxOut(tx.id, index, txOut.address, txOut.index);
+      });
+    })
+    .reduce((a, b) => a.concat(b), []);
+};
+
+const spentTxOuts = newTxs
+  .map((tx) => tx.txIns)
+  .reduce((a, b) => a.concat(b), [])
+  .map((txIn) => new UTxOut(txIn.txOutId, txIn.txOutindex, "", 0));
+
+const resultingUTxOuts = uTxOutList
+  .filter((utx0) => !findUTxOut(utx0.txOutId, utx0.txOutIndex, spentTxOuts))
+  .concat(newUTxOuts);
+
+return resultingUTxOuts;
+
+// uTxOuts[A(40), B, C, D, E, F] >>>> A(40) >> ZZ(10), MM(30) >>> [B,C,D,E,F,ZZ,MM]
