@@ -63,6 +63,7 @@ const signTxIn = (tx, txInIndex, privatekey, uTxOut) => {
 
   const referencedUTxOut = findUTxOut(txIn.txOutId, tx.txOutIndex, uTxOut);
   if (referencedUTxOut === null) {
+    console.log("Couldn't find the referenced uTxOut, not signing");
     return;
   }
   const key = ec.keyFromPrivate(privatekey, "hex");
@@ -177,6 +178,7 @@ const validateTxIn = (txIn, tx, uTxOutList) => {
       uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex
   );
   if (wantedTxOut === null) {
+    console.log(`Didn't find the wanted uTxOut, the tx: ${tx} is invalid`);
     return false;
   } else {
     const address = wantedTxOut.address;
@@ -186,38 +188,67 @@ const validateTxIn = (txIn, tx, uTxOutList) => {
 };
 
 const validateTx = (tx, uTxOutList) => {
-  if (getTxId() !== tx.id) {
+  if (!isTxStructureValid(tx)) {
+    console.log("Tx structure is invalid");
     return false;
+  }
+
+  if (getTxId(tx) !== tx.id) {
+    console.log("Tx ID is not valid");
+    return false;
+  }
+
+  const hasValidTxIns = tx.txIns.map((txIn) =>
+    validateTxIn(txIn, tx, uTxOutList)
+  );
+
+  if (!hasValidTxIns) {
+    console.log(`The tx: ${tx} doesn't have valid txIns`);
+    return false;
+  }
+
+  const amountInTxIns = tx.txIns
+    .map((txIn) => getAmountInTxIn(txIn, uTxOutList))
+    .reduce((a, b) => a + b, 0);
+
+  const amountInTxOuts = tx.txOuts
+    .map((txOut) => txOut.amount)
+    .reduce((a, b) => a + b, 0);
+
+  if (amountInTxIns !== amountInTxOuts) {
+    console.log(
+      `The tx: ${tx} doesn't have the same amount in the txOut as in the txIns`
+    );
+    return false;
+  } else {
+    return true;
   }
 };
 
-const hashValidTxIns = tx.txIns.map((txIn) =>
-  validateTxIn(txIn, tx, uTxOutList)
-);
-
 const getAmountInTxIn = (txIn, uTxOutList) =>
   findUTxOut(txIn.txOutId, uTxOutList.txOutIndex, uTxOutList).amount;
-const amountInTxIns = tx.txIns
-  .map((txIn) => getAmountInTxIn(txIn, uTxOutList))
-  .reduce((a, b) => a + b, 0);
-const amountInTxOuts = tx.txOuts
-  .map((txOut) => txOut.amount)
-  .reduce((a, b) => a + b, 0);
-
-if (amountInTxIns !== amountInTxOuts) {
-  return false;
-} //트랜잭션인풋과 아웃풋이 같지않다면 false
 
 const validateCoinBaseTx = (tx, blockIndex) => {
   if (getTxId(tx) !== tx.id) {
+    console.log("Tx ID is not valid");
     return false;
   } else if (tx.txIns.length !== 1) {
+    console.log("Coinbase TX should only have one input");
     return false;
   } else if (tx.txIns[0].txOutIndex !== blockIndex) {
+    console.log(
+      "The txOutIndex of the Coinbase Tx should be the same as the Block Index"
+    );
     return false;
   } else if (tx.txOuts.length !== 1) {
+    console.log("Coinbase TX should only have one output");
     return false;
   } else if (tx.txOuts[0].amount !== COINBASE_AMOUNT) {
+    console.log(
+      `Coinbase TX should have an amount of only ${COINBASE_AMOUNT} and it has ${
+        tx.txOuts[0].amount
+      }`
+    );
     return false;
   } else {
     return true;
