@@ -5,6 +5,9 @@ const CrpytoJS = require("crypto-js"),
 const ec = new elliptic.ec("secp256k1");
 //initialize elliptic
 
+const COINBASE_AMOUNT = 50;
+//채굴자에게 보상으로 주어질 코인
+
 class TxOut {
   constructor(address, amount) {
     this.address = address;
@@ -166,6 +169,9 @@ const isTxStructureValid = (tx) => {
 };
 
 const validateTxIn = (txIn, tx, uTxOutList) => {
+  if (!isTxStructureValid(tx)) {
+    return false;
+  }
   const wantedTxOut = uTxOutList.find(
     (uTxO) =>
       uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex
@@ -201,3 +207,19 @@ const amountInTxOuts = tx.txOuts
 if (amountInTxIns !== amountInTxOuts) {
   return false;
 } //트랜잭션인풋과 아웃풋이 같지않다면 false
+
+const validateCoinBaseTx = (tx, blockIndex) => {
+  if (getTxId(tx) !== tx.id) {
+    return false;
+  } else if (tx.txIns.length !== 1) {
+    return false;
+  } else if (tx.txIns[0].txOutIndex !== blockIndex) {
+    return false;
+  } else if (tx.txOuts.length !== 1) {
+    return false;
+  } else if (tx.txOuts[0].amount !== COINBASE_AMOUNT) {
+    return false;
+  } else {
+    return true;
+  }
+};
