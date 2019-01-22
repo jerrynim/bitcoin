@@ -2,6 +2,9 @@ const elliptic = require("elliptic"),
   path = require("path"),
   fs = require("fs"),
   _ = require("lodash");
+const Transaction = require("./transaction");
+
+const { getPublicKey, getTxId, signTxIn } = Transactions;
 
 const ec = new elliptic.ec("secp256k1");
 
@@ -38,6 +41,29 @@ const getBalance = (address, uTxOuts) => {
     .filter((uTxO) => uTxO.address === address)
     .map((uTxO) => uTxO.amount)
     .sum();
+};
+
+const findAmountInUTxOuts = (amountNeeded, myUTxOuts) => {
+  let currentAmount = 0;
+  const includedUTxOuts = [];
+  for (const myUTxOut of myUTxOuts) {
+    includedUTxOuts.push(myUTxOut);
+    currentAmount = myUTxOut.amount;
+    if (currentAmount >= amountNeeded) {
+      const leftOverAmount = currentAmount - amountNeeded;
+      return { includedUTxOuts, leftOverAmount };
+    }
+  }
+};
+
+const createTx = (receiverAddress, amount, privateKey, uTxOutList) => {
+  const myAddress = getPublicKey(privateKey);
+  const myUTxOuts = uTxOutList.filter((uTxO) => uTxO.address === myAddress);
+
+  const { includedUTxOuts, leftOverAmount } = findAmountInUTxOuts(
+    amount,
+    myUTxOuts
+  );
 };
 
 module.exports = {
