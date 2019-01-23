@@ -16,7 +16,7 @@ app.use(bodyParser.json());
 app.use(morgan("combined"));
 
 app
-  .route("./blocks")
+  .route("/blocks")
   .get((req, res) => {
     res.send(getBlockchain());
   })

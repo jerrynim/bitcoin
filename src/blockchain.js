@@ -120,7 +120,7 @@ const hashMatchesDifficulty = (hash, difficulty) => {
   const requiredZeros = "0".repeat(difficulty);
   console.log("Trying difficulty:", difficulty, "with hash", hashInBinary);
   return hashInBinary.startsWith(requiredZeros);
-}; //해쉬를 2진수로 변환하여 00000으로 시작하는지 확인
+};
 
 const getBlocksHash = (block) =>
   createHash(
@@ -131,6 +131,13 @@ const getBlocksHash = (block) =>
     block.difficulty,
     block.nonce
   );
+
+const isTimeStampValid = (newBlock, oldBlock) => {
+  return (
+    oldBlock.timestamp - 60 < newBlock.timestamp &&
+    newBlock.timestamp - 60 < getTimestamp()
+  );
+};
 
 const isBlockValid = (candidateBlock, latestBlock) => {
   if (!isBlockStructureValid(candidateBlock)) {
@@ -147,19 +154,12 @@ const isBlockValid = (candidateBlock, latestBlock) => {
   } else if (getBlocksHash(candidateBlock) !== candidateBlock.hash) {
     console.log("The hash of this block is invalid");
     return false;
-  } else if (isTimeStampVlid(candidateBlock, latestBlock)) {
-    return false;
+  } else if (!isTimeStampValid(candidateBlock, latestBlock)) {
     console.log("The timestamp of this block is dodgy");
+    return false;
   }
   return true;
 }; // 브록의 타입검증, 인덱스값 검증, 이전 해쉬값 검증, 계산된 해쉬값 검증
-
-const isTimeStampVlid = (newBlock, oldBlock) => {
-  return (
-    oldBlock.timestamp - 60 < newBlock.timestamp &&
-    newBlock.timestamp - 60 < getTimestamp()
-  );
-};
 
 const isBlockStructureValid = (block) => {
   return (
