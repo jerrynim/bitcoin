@@ -1,5 +1,8 @@
 const CryptoJS = require("crypto-js"),
-  hexToBinary = require("hex-to-binary");
+  hexToBinary = require("hex-to-binary"),
+  Wallet = require("./wallet");
+
+const { getBalance, getPublicFromWallet } = Wallet;
 
 const BLOCK_GENERATION_INTERVAL = 10;
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
@@ -27,6 +30,8 @@ const genesisBlock = new Block(
 );
 
 let blockchain = [genesisBlock];
+
+let uTxOuts = [];
 
 const getNewestBlock = () => blockchain[blockchain.length - 1];
 
@@ -212,11 +217,14 @@ const addBlockToChain = (candidateBlock) => {
   }
 }; //후보블락을 블록체인에 푸쉬 한다.
 
+const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
+
 module.exports = {
   getNewestBlock,
   getBlockchain,
   createNewBlock,
   isBlockStructureValid,
   addBlockToChain,
-  replaceChain
+  replaceChain,
+  getAccountBalance
 };

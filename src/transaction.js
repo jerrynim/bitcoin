@@ -16,8 +16,8 @@ class TxOut {
 }
 
 class TxIn {
-  // uTxOutId
-  // uTxOutIndex
+  // TxOutId
+  // TxOutIndex
   // Signature
 }
 
@@ -36,8 +36,6 @@ class UTxOut {
   }
 } // UnSpent Transaction Output
 
-let uTxOuts = [];
-
 const getTxId = (tx) => {
   const txInContent = tx.txIns
     .map((txIn) => txIn.uTxOutId + txIn.uTxOutIndex)
@@ -50,18 +48,16 @@ const getTxId = (tx) => {
   return CrpytoJS.SHA256(txInContent + txOutContent).toString();
 };
 
-const signTxIn = (tx, txInIndex, privatekey, uTxOut) => {
+const findUTxOut = (txOutId, txOutIndex, txOutList) => {
+  return txOutList.find(
+    (uTxOut) => uTxOut.txOutId === txOutId && uTxOut.uTxOutIndex === txOutIndex
+  );
+};
+
+const signTxIn = (tx, txInIndex, privatekey, uTxOutList) => {
   const txIn = tx.txIns[txInIndex];
   const dataToSign = tx.id;
-
-  const findUTxOut = (txOutId, txOutIndex, txOutList) => {
-    return txOutList.find(
-      (uTxOut) =>
-        uTxOut.txOutId === txOutId && uTxOut.uTxOutIndex === txOutIndex
-    );
-  };
-
-  const referencedUTxOut = findUTxOut(txIn.txOutId, tx.txOutIndex, uTxOut);
+  const referencedUTxOut = findUTxOut(txIn.txOutId, tx.txOutIndex, uTxOutList);
   if (referencedUTxOut === null) {
     console.log("Couldn't find the referenced uTxOut, not signing");
     return;
@@ -269,5 +265,8 @@ const validateCoinBaseTx = (tx, blockIndex) => {
 module.exports = {
   getPublicKey,
   getTxId,
-  signTxIn
+  signTxIn,
+  TxIn,
+  Transaction,
+  TxOut
 };

@@ -1,10 +1,17 @@
 const elliptic = require("elliptic"),
   path = require("path"),
   fs = require("fs"),
-  _ = require("lodash");
-const Transaction = require("./transaction");
+  _ = require("lodash"),
+  Transactions = require("./transaction");
 
-const { getPublicKey, getTxId, signTxIn } = Transactions;
+const {
+  getPublicKey,
+  getTxId,
+  signTxIn,
+  TxIn,
+  Transaction,
+  TxOut
+} = Transactions;
 
 const ec = new elliptic.ec("secp256k1");
 
@@ -26,8 +33,8 @@ const initWallet = () => {
 };
 
 const getPrivateFromWallet = () => {
-  const buffur = fs.readFileSync(privateKeyLocation, "utf-8");
-  Buffer.toString();
+  const buffer = fs.readFileSync(privateKeyLocation, "utf8");
+  return buffer.toString();
 };
 
 const getPublicFromWallet = () => {
@@ -56,6 +63,16 @@ const findAmountInUTxOuts = (amountNeeded, myUTxOuts) => {
   }
 };
 
+const createTxOuts = (receiverAddress, myAddress, amount, leftOverAmount) => {
+  const receiverTxOut = new TxOut(receiverAddress, amount);
+  if (leftOverAmount === 0) {
+    return [receiverTxOut];
+  } else {
+    const leftOverTxOut = new TxOut(myAddress, leftOverAmount);
+    return [receiverTxOut, leftOverTxOut];
+  }
+};
+
 const createTx = (receiverAddress, amount, privateKey, uTxOutList) => {
   const myAddress = getPublicKey(privateKey);
   const myUTxOuts = uTxOutList.filter((uTxO) => uTxO.address === myAddress);
@@ -64,8 +81,34 @@ const createTx = (receiverAddress, amount, privateKey, uTxOutList) => {
     amount,
     myUTxOuts
   );
+  const toUnsignedTxin = (uTxOut) => {
+    const txIn = new TxIn();
+    txIn.txOutId = uTxOut.txOutId;
+    txIn.txOutIndex = uTxOut.txOutIndex;
+  };
+
+  const unsignedTxIns = includedUTxOuts.map(toUnsignedTxin);
+
+  const tx = new Transaction();
+
+  tx.txIns = unsignedTxIns;
+  tx.txOuts = createTxOuts(receiverAddress, myAddress, amount, leftOverAmount);
+
+  tx.id = getTxId(tx);
+
+  tx.txIns = tx.txIns.map((txIn, index) => {
+    txIn.signature = signTxIn(tx, index, privateKey, uTxOutList);
+    return txIn;
+  });
+  return tx;
 };
+//나의 주소와 트랙잰셕을 찾아 필요한양만큼의 includedUTxOuts와 남은양을 가지고
+//unSignedTxIN을 만들고
+//새로운 tx에 txIn을 unSingedTxIN으로 txOut을 creatTxOuts()로 만들고 tx.id아이디를 가지고
+//txIn을 서명한후 tx을 반환
 
 module.exports = {
-  initWallet
+  initWallet,
+  getBalance,
+  getPublicFromWallet
 };
