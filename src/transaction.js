@@ -1,12 +1,11 @@
-const CrpytoJS = require("crypto-js"),
+const CryptoJS = require("crypto-js"),
   elliptic = require("elliptic"),
+  _ = require("lodash"),
   utils = require("./utils");
 
 const ec = new elliptic.ec("secp256k1");
-//initialize elliptic
 
 const COINBASE_AMOUNT = 50;
-//채굴자에게 보상으로 주어질 코인
 
 class TxOut {
   constructor(address, amount) {
@@ -16,8 +15,8 @@ class TxOut {
 }
 
 class TxIn {
-  // TxOutId
-  // TxOutIndex
+  // txOutId
+  // txOutIndex
   // Signature
 }
 
@@ -31,30 +30,30 @@ class UTxOut {
   constructor(txOutId, txOutIndex, address, amount) {
     this.txOutId = txOutId;
     this.txOutIndex = txOutIndex;
-    tihs.address = address;
+    this.address = address;
     this.amount = amount;
   }
-} // UnSpent Transaction Output
+}
 
 const getTxId = (tx) => {
   const txInContent = tx.txIns
-    .map((txIn) => txIn.uTxOutId + txIn.uTxOutIndex)
+    .map((txIn) => txIn.txOutId + txIn.txOutIndex)
     .reduce((a, b) => a + b, "");
 
   const txOutContent = tx.txOuts
-    .map((txOut) => txOut.adress + txOut.amount)
+    .map((txOut) => txOut.address + txOut.amount)
     .reduce((a, b) => a + b, "");
 
-  return CrpytoJS.SHA256(txInContent + txOutContent).toString();
+  return CryptoJS.SHA256(txInContent + txOutContent + tx.timestamp).toString();
 };
 
-const findUTxOut = (txOutId, txOutIndex, txOutList) => {
-  return txOutList.find(
-    (uTxOut) => uTxOut.txOutId === txOutId && uTxOut.uTxOutIndex === txOutIndex
+const findUTxOut = (txOutId, txOutIndex, uTxOutList) => {
+  return uTxOutList.find(
+    (uTxO) => uTxO.txOutId === txOutId && uTxO.txOutIndex === txOutIndex
   );
 };
 
-const signTxIn = (tx, txInIndex, privatekey, uTxOutList) => {
+const signTxIn = (tx, txInIndex, privateKey, uTxOutList) => {
   const txIn = tx.txIns[txInIndex];
   const dataToSign = tx.id;
   const referencedUTxOut = findUTxOut(txIn.txOutId, tx.txOutIndex, uTxOutList);
@@ -63,10 +62,10 @@ const signTxIn = (tx, txInIndex, privatekey, uTxOutList) => {
     return;
   }
   const referencedAddress = referencedUTxOut.address;
-  if (getPublicKey(privatekey) !== referencedAddress) {
+  if (getPublicKey(privateKey) !== referencedAddress) {
     return false;
   }
-  const key = ec.keyFromPrivate(privatekey, "hex");
+  const key = ec.keyFromPrivate(privateKey, "hex");
   const signature = utils.toHexString(key.sign(dataToSign).toDER());
   return signature;
 };
@@ -79,26 +78,30 @@ const getPublicKey = (privateKey) => {
 };
 
 const updateUTxOuts = (newTxs, uTxOutList) => {
-  const newUTxOuts = mewTxs
-    .map((tx) => {
-      tx.txOuts.map((txOut, index) => {
-        new UTxOut(tx.id, index, txOut.address, txOut.index);
-      });
-    })
+  const newUTxOuts = newTxs
+    .map((tx) =>
+      tx.txOuts.map(
+        (txOut, index) => new UTxOut(tx.id, index, txOut.address, txOut.amount)
+      )
+    )
     .reduce((a, b) => a.concat(b), []);
 
   const spentTxOuts = newTxs
     .map((tx) => tx.txIns)
     .reduce((a, b) => a.concat(b), [])
-    .map((txIn) => new UTxOut(txIn.txOutId, txIn.txOutindex, "", 0));
+    .map((txIn) => new UTxOut(txIn.txOutId, txIn.txOutIndex, "", 0));
 
   const resultingUTxOuts = uTxOutList
-    .filter((utx0) => !findUTxOut(utx0.txOutId, utx0.txOutIndex, spentTxOuts))
+    .filter((uTxO) => !findUTxOut(uTxO.txOutId, uTxO.txOutIndex, spentTxOuts))
     .concat(newUTxOuts);
-
   return resultingUTxOuts;
 };
-// uTxOuts[A(40), B, C, D, E, F] >>>> A(40) >> ZZ(10), MM(30) >>> [B,C,D,E,F,ZZ,MM]
+
+/*
+[(), B, C, D, E, F, G, ZZ, MM]
+A(40) ---> TRANSACTION  ----> ZZ(10)
+                        ----> MM(30)
+*/
 
 const isTxInStructureValid = (txIn) => {
   if (txIn === null) {
@@ -131,19 +134,18 @@ const isAddressValid = (address) => {
   } else {
     return true;
   }
-}; //"^[a-fA-F0-9]+$" 헥사 데시멀 정규코드
+};
 
 const isTxOutStructureValid = (txOut) => {
   if (txOut === null) {
-    console.log("The txOut appears to be null");
     return false;
-  } else if (txOut.address !== "string") {
+  } else if (typeof txOut.address !== "string") {
     console.log("The txOut doesn't have a valid string as address");
     return false;
   } else if (!isAddressValid(txOut.address)) {
     console.log("The txOut doesn't have a valid address");
     return false;
-  } else if (txOut.amount !== "number") {
+  } else if (typeof txOut.amount !== "number") {
     console.log("The txOut doesn't have a valid amount");
     return false;
   } else {
@@ -159,7 +161,7 @@ const isTxStructureValid = (tx) => {
     console.log("The txIns are not an array");
     return false;
   } else if (
-    !tx.txIns.map(!isTxInStructureValid).reduce((a, b) => a && b, true)
+    !tx.txIns.map(isTxInStructureValid).reduce((a, b) => a && b, true)
   ) {
     console.log("The structure of one of the txIn is not valid");
     return false;
@@ -177,9 +179,6 @@ const isTxStructureValid = (tx) => {
 };
 
 const validateTxIn = (txIn, tx, uTxOutList) => {
-  if (!isTxStructureValid(tx)) {
-    return false;
-  }
   const wantedTxOut = uTxOutList.find(
     (uTxO) =>
       uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex
@@ -193,6 +192,9 @@ const validateTxIn = (txIn, tx, uTxOutList) => {
     return key.verify(tx.id, txIn.signature);
   }
 };
+
+const getAmountInTxIn = (txIn, uTxOutList) =>
+  findUTxOut(txIn.txOutId, txIn.txOutIndex, uTxOutList).amount;
 
 const validateTx = (tx, uTxOutList) => {
   if (!isTxStructureValid(tx)) {
@@ -232,12 +234,9 @@ const validateTx = (tx, uTxOutList) => {
   }
 };
 
-const getAmountInTxIn = (txIn, uTxOutList) =>
-  findUTxOut(txIn.txOutId, uTxOutList.txOutIndex, uTxOutList).amount;
-
-const validateCoinBaseTx = (tx, blockIndex) => {
+const validateCoinbaseTx = (tx, blockIndex) => {
   if (getTxId(tx) !== tx.id) {
-    console.log("Tx ID is not valid");
+    console.log("Invalid Coinbase tx ID");
     return false;
   } else if (tx.txIns.length !== 1) {
     console.log("Coinbase TX should only have one input");
@@ -266,11 +265,57 @@ const createCoinbaseTx = (address, blockIndex) => {
   const tx = new Transaction();
   const txIn = new TxIn();
   txIn.signature = "";
-  txIn.txOutId = blockIndex;
+  txIn.txOutId = "";
+  txIn.txOutIndex = blockIndex;
   tx.txIns = [txIn];
   tx.txOuts = [new TxOut(address, COINBASE_AMOUNT)];
   tx.id = getTxId(tx);
   return tx;
+};
+
+const hasDuplicates = (txIns) => {
+  const groups = _.countBy(txIns, (txIn) => txIn.txOutId + txIn.txOutIndex);
+
+  return _(groups)
+    .map((value) => {
+      if (value > 1) {
+        console.log("Found a duplicated txIn");
+        return true;
+      } else {
+        return false;
+      }
+    })
+    .includes(true);
+};
+
+const validateBlockTxs = (txs, uTxOutList, blockIndex) => {
+  const coinbaseTx = txs[0];
+  if (!validateCoinbaseTx(coinbaseTx, blockIndex)) {
+    console.log("Coinbase Tx is invalid");
+  }
+
+  const txIns = _(txs)
+    .map((tx) => tx.txIns)
+    .flatten()
+    .value();
+
+  if (hasDuplicates(txIns)) {
+    console.log("Found duplicated txIns");
+    return false;
+  }
+
+  const nonCoinbaseTxs = txs.slice(1);
+
+  return nonCoinbaseTxs
+    .map((tx) => validateTx(tx, uTxOutList))
+    .reduce((a, b) => a + b, true);
+};
+
+const processTxs = (txs, uTxOutList, blockIndex) => {
+  if (!validateBlockTxs(txs, uTxOutList, blockIndex)) {
+    return null;
+  }
+  return updateUTxOuts(txs, uTxOutList);
 };
 
 module.exports = {
@@ -280,5 +325,6 @@ module.exports = {
   TxIn,
   Transaction,
   TxOut,
-  createCoinbaseTx
+  createCoinbaseTx,
+  processTxs
 };

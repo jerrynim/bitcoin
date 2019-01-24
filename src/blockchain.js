@@ -5,7 +5,7 @@ const CryptoJS = require("crypto-js"),
 
 const { getBalance, getPublicFromWallet } = Wallet;
 
-const { createCoinbaseTx } = Transactions;
+const { createCoinbaseTx, processTxs } = Transactions;
 
 const BLOCK_GENERATION_INTERVAL = 10;
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
@@ -201,12 +201,11 @@ const isChainValid = (candidateChain) => {
   return true;
 }; //제네시스 블락을 비교 && 다음블락부터 검증
 
-const sumDifficulty = (anyBlockchain) => {
+const sumDifficulty = (anyBlockchain) =>
   anyBlockchain
     .map((block) => block.difficulty)
     .map((difficulty) => Math.pow(2, difficulty))
     .reduce((a, b) => a + b);
-};
 
 const replaceChain = (candidateChain) => {
   if (
@@ -218,19 +217,30 @@ const replaceChain = (candidateChain) => {
   } else {
     return false;
   }
-}; //길이를 비교하여 길이가 긴것으로 대치한다
+};
 
 const addBlockToChain = (candidateBlock) => {
   if (isBlockValid(candidateBlock, getNewestBlock())) {
-    blockchain.push(candidateBlock);
+    const processedTxs = processTxs(
+      candidateBlock.data,
+      uTxOuts,
+      candidateBlock.index
+    );
+    if (processedTxs === null) {
+      console.log("Couldnt process txs");
+      return false;
+    } else {
+      blockchain.push(candidateBlock);
+      uTxOuts = processedTxs;
+      return true;
+    }
     return true;
   } else {
     return false;
   }
-}; //후보블락을 블록체인에 푸쉬 한다.
+};
 
 const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
-
 module.exports = {
   getNewestBlock,
   getBlockchain,
