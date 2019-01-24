@@ -54,7 +54,7 @@ const createNewBlock = () => {
   );
   const blockData = [coinbaseTx];
   return createNewRawBlock(blockData);
-};
+}; //퍼블릭키(주소)와 blockIndex로 coinbash생성후 블록생성
 
 const createNewRawBlock = (data) => {
   const previousBlock = getNewestBlock();
@@ -71,7 +71,7 @@ const createNewRawBlock = (data) => {
   addBlockToChain(newBlock);
   require("./p2p").broadcastNewBlock();
   return newBlock;
-};
+}; //블록체인에 블록을 추가하고 브로드캐스팅
 
 const findDifficulty = () => {
   const newestBlock = getNewestBlock();
@@ -98,7 +98,7 @@ const calculateNewDifficult = (newestBlock, blockchain) => {
   } else {
     return lastCalculateBlock.difficulty;
   }
-};
+}; //시간이 BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL 의 두배미만 1/2이상으로 되도록 difficulty설정
 
 const findBlock = (index, previousHash, timestamp, data, difficulty) => {
   let nonce = 0;
@@ -125,7 +125,7 @@ const findBlock = (index, previousHash, timestamp, data, difficulty) => {
     }
     nonce++;
   }
-};
+}; //설정된 difficulty의 해쉬를 찾을때까지 nonce ++
 
 const hashMatchesDifficulty = (hash, difficulty) => {
   const hashInBinary = hexToBinary(hash);
@@ -206,6 +206,7 @@ const sumDifficulty = (anyBlockchain) =>
     .map((block) => block.difficulty)
     .map((difficulty) => Math.pow(2, difficulty))
     .reduce((a, b) => a + b);
+//Math.pow(a,b) => a를 b번 곱한다
 
 const replaceChain = (candidateChain) => {
   if (
@@ -217,7 +218,7 @@ const replaceChain = (candidateChain) => {
   } else {
     return false;
   }
-};
+}; //같은 체인인지 검증하고 difficulty의 합이 더큰것으로 교체
 
 const addBlockToChain = (candidateBlock) => {
   if (isBlockValid(candidateBlock, getNewestBlock())) {
@@ -241,6 +242,7 @@ const addBlockToChain = (candidateBlock) => {
 };
 
 const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
+
 module.exports = {
   getNewestBlock,
   getBlockchain,
