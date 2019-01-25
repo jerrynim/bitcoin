@@ -13,7 +13,7 @@ const {
 } = Wallet;
 
 const { createCoinbaseTx, processTxs } = Transactions;
-const { addToMempool } = Mempool;
+const { addToMempool, getMempool } = Mempool;
 
 const BLOCK_GENERATION_INTERVAL = 10;
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
@@ -60,7 +60,7 @@ const createNewBlock = () => {
     getPublicFromWallet(),
     getNewestBlock().index + 1
   );
-  const blockData = [coinbaseTx];
+  const blockData = [coinbaseTx].concat(getMempool());
   return createNewRawBlock(blockData);
 }; //퍼블릭키(주소)와 blockIndex로 coinbash생성후 블록생성
 
@@ -256,6 +256,7 @@ const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
 const sendTx = (address, amount) => {
   const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOUtList());
   addToMempool((tx, getUTxOUtList()));
+  return tx;
 };
 
 module.exports = {
@@ -265,5 +266,6 @@ module.exports = {
   isBlockStructureValid,
   addBlockToChain,
   replaceChain,
-  getAccountBalance
+  getAccountBalance,
+  sendTx
 };

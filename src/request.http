@@ -18,3 +18,14 @@ Content-Type: application/json
 ###
 
 GET http://localhost:3000/me/balance
+
+
+###
+
+POST http://localhost:3000/transactions/
+    Content-type: application/json
+
+    {
+    "address": "047edc7afe210084132d2174432cc53cf5d98de97648b9975aa6851f4bfbaa48f12f10f666d78311a4551bc361bfddd4117233663ba4b50ca0b3e86fc3a5257cf8",
+    "amount": 40
+}
