@@ -1,11 +1,19 @@
 const CryptoJS = require("crypto-js"),
+  _ = require("lodash"),
   hexToBinary = require("hex-to-binary"),
   Transactions = require("./transaction"),
-  Wallet = require("./wallet");
+  Wallet = require("./wallet"),
+  Mempool = require("./memPool");
 
-const { getBalance, getPublicFromWallet } = Wallet;
+const {
+  getBalance,
+  getPublicFromWallet,
+  createTx,
+  getPrivateFromWallet
+} = Wallet;
 
 const { createCoinbaseTx, processTxs } = Transactions;
+const { addToMempool } = Mempool;
 
 const BLOCK_GENERATION_INTERVAL = 10;
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
@@ -241,7 +249,14 @@ const addBlockToChain = (candidateBlock) => {
   }
 };
 
+const getUTxOUtList = () => _.cloneDeep(uTxOuts);
+//uTxOuts는 update 되기때문에 복사하여 출력한다
 const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
+
+const sendTx = (address, amount) => {
+  const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOUtList());
+  addToMempool((tx, getUTxOUtList()));
+};
 
 module.exports = {
   getNewestBlock,
