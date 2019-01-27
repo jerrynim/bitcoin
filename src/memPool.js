@@ -18,16 +18,16 @@ const isTxValidForPool = (tx, mempool) => {
   const txInsInPool = getTxInsInPool(mempool);
 
   const isTxInAlreadyInPool = (txIns, txIn) => {
-    return _.find(txIns, (txInPool) => {
+    return _.find(txIns, (txInInPool) => {
       return (
-        txIn.txOutIndex === txInPool.txOutIndex &&
-        txIn.txOutId === txInPool.txOutId
+        txIn.txOutIndex === txInInPool.txOutIndex &&
+        txIn.txOutId === txInInPool.txOutId
       );
     });
-  }; //mempool안의 txIn과 txIns안의 txIn 비교하여 같은것을 출력
+  };
 
-  for (const txIN of tx.txIns) {
-    if (isTxInAlreadyInPool((txInsPool, txIn))) {
+  for (const txIn of tx.txIns) {
+    if (isTxInAlreadyInPool(txInsInPool, txIn)) {
       return false;
     }
   }

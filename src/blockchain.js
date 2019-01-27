@@ -249,13 +249,19 @@ const addBlockToChain = (candidateBlock) => {
   }
 };
 
-const getUTxOUtList = () => _.cloneDeep(uTxOuts);
+const getUTxOutList = () => _.cloneDeep(uTxOuts);
 //uTxOuts는 update 되기때문에 복사하여 출력한다
 const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
 
 const sendTx = (address, amount) => {
-  const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOUtList());
-  addToMempool((tx, getUTxOUtList()));
+  const tx = createTx(
+    address,
+    amount,
+    getPrivateFromWallet(),
+    getUTxOutList(),
+    getMempool()
+  );
+  addToMempool(tx, getUTxOutList());
   return tx;
 };
 

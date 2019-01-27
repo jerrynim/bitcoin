@@ -75,13 +75,15 @@ const createTxOuts = (receiverAddress, myAddress, amount, leftOverAmount) => {
   }
 };
 
-const createTx = (receiverAddress, amount, privateKey, uTxOutList) => {
+const createTx = (receiverAddress, amount, privateKey, uTxOutList, memPool) => {
   const myAddress = getPublicKey(privateKey);
   const myUTxOuts = uTxOutList.filter((uTxO) => uTxO.address === myAddress);
 
+  const filteredUTxOuts = filterUTxOutsFromMempool(myUTxOuts, memPool);
+
   const { includedUTxOuts, leftOverAmount } = findAmountInUTxOuts(
     amount,
-    myUTxOuts
+    filteredUTxOuts
   );
   const toUnsignedTxin = (uTxOut) => {
     const txIn = new TxIn();
@@ -110,6 +112,27 @@ const createTx = (receiverAddress, amount, privateKey, uTxOutList) => {
 //unSignedTxIN을 만들고
 //새로운 tx에 txIn을 unSingedTxIN으로 txOut을 creatTxOuts()로 만들고 tx.id아이디를 가지고
 //txIn을 서명한후 tx을 반환
+
+const filterUTxOutsFromMempool = (uTxOutList, mempool) => {
+  const txIns = _(mempool)
+    .map((tx) => tx.txIns)
+    .flatten()
+    .value();
+
+  const removables = [];
+
+  for (const uTxOut of uTxOutList) {
+    const txIn = _.find(
+      txIns,
+      (txIn) =>
+        txIn.txOutIndex === uTxOut.txOutIndex && txIn.txOutId === uTxOut.txOutId
+    );
+    if (txIn !== undefined) {
+      removables.push(uTxOut);
+    }
+  }
+  return _.without(uTxOutList, ...removables);
+};
 
 module.exports = {
   initWallet,
