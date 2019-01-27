@@ -64,6 +64,8 @@ const startP2PServer = (server) => {
   wsServer.on("connection", (ws) => {
     initSocketConnection(ws);
   });
+  ws.on("error", () => console.log("Connection failed"));
+  ws.on("close", () => console.log("Connection failed"));
   wsServer.on("error", () => {
     console.log(error);
   });
