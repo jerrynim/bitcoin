@@ -121,6 +121,7 @@ const handleSocketMessages = (ws) => {
         receivedTxs.forEach((tx) => {
           try {
             handleIncomingTx(tx);
+            broadcastMempool();
           } catch (e) {
             console.log(e);
           }
@@ -159,7 +160,7 @@ const sendMessage = (ws, message) => ws.send(JSON.stringify(message));
 const sendMessageToAll = (message) =>
   sockets.forEach((ws) => sendMessage(ws, message));
 
-const returnMempool = () => mempoolResponse(getAllMempool());
+const returnMempool = () => mempoolResponse(getMempool());
 
 const responseLatest = () => blockchainResponse([getNewestBlock()]);
 

@@ -203,14 +203,28 @@ const isChainValid = (candidateChain) => {
     console.log(
       "The candidateChains's genesisBlock is not the same as our genesisBlock"
     );
-    return false;
+    return null;
   }
-  for (let i = 1; i < candidateChain.length; i++) {
-    if (!isBlockValid(candidateChain[i], candidateChain[i - 1])) {
-      return false;
+
+  let foreignUTxOuts = [];
+
+  for (let i = 0; i < candidateChain.length; i++) {
+    const currentBlock = candidateChain[i];
+    if (i !== 0 && !isBlockValid(currentBlock, currentBlock[i - 1])) {
+      return null;
+    }
+
+    foreignUTxOuts = processTxs(
+      currentBlock.data,
+      foreignUTxOuts,
+      currentBlock.index
+    );
+
+    if (foreignUTxOuts === null) {
+      return null;
     }
   }
-  return true;
+  return foreignUTxOuts;
 }; //제네시스 블락을 비교 && 다음블락부터 검증
 
 const sumDifficulty = (anyBlockchain) =>
@@ -221,11 +235,16 @@ const sumDifficulty = (anyBlockchain) =>
 //Math.pow(a,b) => a를 b번 곱한다
 
 const replaceChain = (candidateChain) => {
+  const foreignUTxOuts = isChainValid(candidateChain);
+  const validChain = foreignUTxOuts !== null;
   if (
-    isChainValid(candidateChain) &&
+    validChain &&
     sumDifficulty(candidateChain) > sumDifficulty(getBlockchain())
   ) {
     blockchain = candidateChain;
+    uTxOuts = foreignUTxOuts;
+    updateMemPool(uTxOuts);
+    require("./p2p").broadcastNewBlock();
     return true;
   } else {
     return false;
@@ -266,7 +285,6 @@ const sendTx = (address, amount) => {
     getUTxOutList(),
     getMempool()
   );
-  console.log(getMempool());
   addToMempool(tx, getUTxOutList());
   require("./p2p").broadcastMempool();
   return tx;
