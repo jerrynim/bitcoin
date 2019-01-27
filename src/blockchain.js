@@ -13,7 +13,7 @@ const {
 } = Wallet;
 
 const { createCoinbaseTx, processTxs } = Transactions;
-const { addToMempool, getMempool } = Mempool;
+const { addToMempool, getMempool, updateMemPool } = Mempool;
 
 const BLOCK_GENERATION_INTERVAL = 10;
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
@@ -30,19 +30,23 @@ class Block {
   }
 }
 
-const genesisBlock = new Block(
-  0,
-  "2C4CEB90344F20CC4C77D626247AED3ED530C1AEE3E6E85AD494498B17414CAC",
-  null,
-  1520312194,
-  "This is the genesis!!",
-  10,
-  0
-);
+const genesisTx = {
+  txIns: [{ signature: "", txOutId: "", txOutIndex: 0 }],
+  txOuts: [
+    {
+      address:
+        "04f20aec39b4c5f79355c053fdaf30410820400bb83ad93dd8ff16834b555e0f6262efba6ea94a87d3c267b5e6aca433ca89b342ac95c40230349ea4bf9caff1ed",
+      amount: 50
+    }
+  ],
+  id: "ad67c73cd8e98af6db4ac14cc790664a890286d4b06c6da7ef223aef8c281e76"
+};
+
+const genesisBlock = new Block(0, "", "", 1520312194, [genesisTx], 10, 0);
 
 let blockchain = [genesisBlock];
 
-let uTxOuts = [];
+let uTxOuts = processTxs(blockchain[0].data, [], 0);
 
 const getNewestBlock = () => blockchain[blockchain.length - 1];
 
@@ -241,6 +245,7 @@ const addBlockToChain = (candidateBlock) => {
     } else {
       blockchain.push(candidateBlock);
       uTxOuts = processedTxs;
+      updateMemPool(uTxOuts);
       return true;
     }
     return true;
@@ -261,8 +266,14 @@ const sendTx = (address, amount) => {
     getUTxOutList(),
     getMempool()
   );
+  console.log(getMempool());
   addToMempool(tx, getUTxOutList());
+  require("./p2p").broadcastMempool();
   return tx;
+};
+
+const handleIncomingTx = (tx) => {
+  addToMempool(tx, getUTxOutList());
 };
 
 module.exports = {
@@ -273,5 +284,6 @@ module.exports = {
   addBlockToChain,
   replaceChain,
   getAccountBalance,
-  sendTx
+  sendTx,
+  handleIncomingTx
 };

@@ -3,11 +3,13 @@ const express = require("express"),
   morgan = require("morgan"),
   Blockchain = require("./blockchain"),
   P2P = require("./p2p"),
-  Wallet = require("./wallet");
+  Wallet = require("./wallet"),
+  Mempool = require("./memPool");
 
 const { getBlockchain, createNewBlock, getAccountBalance, sendTx } = Blockchain;
 const { startP2PServer, connectToPeers } = P2P;
-const { initWallet } = Wallet;
+const { initWallet, getPublicFromWallet } = Wallet;
+const { getMempool } = Mempool;
 
 const PORT = process.env.HTTP_PORT || 3000;
 
@@ -38,9 +40,15 @@ app.get("/me/balance", (req, res) => {
   res.send({ balance });
 });
 
+app.get("/me/address", (req, res) => {
+  res.send(getPublicFromWallet());
+});
+
 app
   .route("/transactions")
-  .get((req, res) => {})
+  .get((req, res) => {
+    res.send(getMempool());
+  })
   .post((req, res) => {
     try {
       const {

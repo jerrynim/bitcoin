@@ -43,7 +43,31 @@ const addToMempool = (tx, uTxOutList) => {
   mempool.push(tx);
 };
 
+const hasTxIn = (txIn, uTxOutList) => {
+  const foundTxIn = uTxOutList.find(
+    (uTxO) =>
+      uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex
+  );
+  return foundTxIn !== undefined;
+};
+
+const updateMemPool = (uTxOutList) => {
+  const invalidTxs = [];
+
+  for (const tx of mempool) {
+    for (const txIn of tx.txIns) {
+      if (!hasTxIn(txIn, uTxOutList)) {
+        invalidTxs.push(tx);
+        break;
+      }
+    }
+  }
+  if (invalidTxs.length > 0) {
+    mempool = _.without(mempool, ...invalidTxs);
+  }
+};
 module.exports = {
   addToMempool,
-  getMempool
+  getMempool,
+  updateMemPool
 };
