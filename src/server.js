@@ -7,9 +7,15 @@ const express = require("express"),
   Mempool = require("./memPool"),
   _ = require("lodash");
 
-const { getBlockchain, createNewBlock, getAccountBalance, sendTx } = Blockchain;
+const {
+  getBlockchain,
+  createNewBlock,
+  getAccountBalance,
+  sendTx,
+  getUTxOutList
+} = Blockchain;
 const { startP2PServer, connectToPeers } = P2P;
-const { initWallet, getPublicFromWallet } = Wallet;
+const { initWallet, getPublicFromWallet, getBalance } = Wallet;
 const { getMempool } = Mempool;
 
 const PORT = process.env.HTTP_PORT || 3000;
@@ -77,6 +83,29 @@ app
       res.status(400).send(e.message);
     }
   });
+
+app.get("/transactions/:id", (req, res) => {
+  const tx = _(getBlockchain())
+    .map((blocks) => blocks.data)
+    .flatten()
+    .find({ id: req.params.id });
+  if (tx === undefined) {
+    res.status(400).send("Transaction not found");
+  }
+  res.send(tx);
+});
+
+app.get("/address/:address", (req, res) => {
+  const {
+    params: { address }
+  } = req;
+  const balance = getBalance(address, getUTxOutList());
+  try {
+    res.send({ balance });
+  } catch (e) {
+    console.log(e);
+  }
+});
 
 const server = app.listen(PORT, () =>
   console.log(`server running on ${PORT}✅`)
