@@ -5,8 +5,8 @@ const express = require("express"),
   P2P = require("./p2p"),
   Wallet = require("./wallet"),
   Mempool = require("./memPool"),
-  _ = require("lodash");
-
+  _ = require("lodash"),
+  cors = require("cors");
 const {
   getBlockchain,
   createNewBlock,
@@ -23,7 +23,7 @@ const PORT = process.env.HTTP_PORT || 3000;
 const app = express();
 app.use(bodyParser.json());
 app.use(morgan("combined"));
-
+app.use(cors());
 app
   .route("/blocks")
   .get((req, res) => {

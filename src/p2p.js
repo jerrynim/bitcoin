@@ -63,9 +63,10 @@ const startP2PServer = (server) => {
   const wsServer = new WebSockets.Server({ server });
   wsServer.on("connection", (ws) => {
     initSocketConnection(ws);
+    ws.on("error", () => console.log("Connection failed"));
+    ws.on("close", () => console.log("Connection failed"));
   });
-  ws.on("error", () => console.log("Connection failed"));
-  ws.on("close", () => console.log("Connection failed"));
+
   wsServer.on("error", () => {
     console.log("error");
   });
@@ -85,6 +86,7 @@ const initSocketConnection = (ws) => {
       sendMessage(ws, "");
     }
   }, 1000);
+  //WS 접속 유지를 위해 1초마다 메세지를보냄
 };
 
 const parseData = (data) => {
